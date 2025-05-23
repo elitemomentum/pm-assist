@@ -63,9 +63,17 @@ if send_btn:
             status = result.get("status", "error")
             action = result.get("action", "")
 
+        try:
             if status == "success":
                 if action == "query":
-                    reply = f"📄 **Memory Result:**\n\n{result_text or message}"
+                    if matches:
+                        reply = "📄 **Memory Result:**\n\n"
+                        for m in matches:
+                            reply += f"- {m['text']} *(score: {round(m['score'], 2)})*\n"
+                    elif result_text:
+                        reply = f"📄 **Memory Result:**\n\n{result_text}"
+                    else:
+                        reply = "📄 **Memory Result:**\n\n_No relevant memory found._"
                 else:
                     reply = f"✅ {message}"
             else:
@@ -74,6 +82,7 @@ if send_btn:
             reply = f"❌ Error: {str(e)}"
 
         st.session_state.chat_history.append(("PM Assist", reply))
+
 
 # Display Chat
 st.divider()
