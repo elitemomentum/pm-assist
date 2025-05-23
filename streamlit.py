@@ -34,7 +34,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 PM Assist")
+st.title("🐦‍⬛Raven")
 
 # Session State Initialization
 if "chat_history" not in st.session_state:
