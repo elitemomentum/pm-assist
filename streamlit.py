@@ -57,6 +57,7 @@ if send_btn:
                 "text": user_input
             })
             result = response.json()
+            st.write("Here you go, Master:", result)
 
             message = result.get("message", "")
             result_text = result.get("result", "")
