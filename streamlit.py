@@ -1,13 +1,14 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="PM Assist", layout="wide")
+# Config
+API_URL = "https://3m9yprbn71.execute-api.ap-south-1.amazonaws.com/production/process"
+st.set_page_config(page_title="PM Assist", layout="centered")
 
+# CSS Styling
 st.markdown("""
     <style>
-    .main {
-        background-color: #ffffff;
-    }
+    .main { background-color: #ffffff; }
     .stTextInput>div>div>input,
     .stTextArea>div>textarea {
         background-color: #f9f9f9;
@@ -24,49 +25,41 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 PM Assist – Natural Language Project Memory")
+st.title("🧠 PM Assist – Project Memory Chat")
 
-with st.sidebar:
-    st.header("🔐 Authentication")
-    user_id = st.text_input("User ID", placeholder="Enter your ID")
-    username = st.text_input("Username", placeholder="e.g. johndoe")
-    passcode = st.text_input("Passcode", type="password")
-    auth_button = st.button("Authenticate")
+# Session state
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "user_id" not in st.session_state:
+    st.session_state.user_id = st.text_input("Enter your User ID to begin:")
 
-authenticated = False
-if auth_button:
-    response = requests.post("https://3m9yprbn71.execute-api.ap-south-1.amazonaws.com/production/process", json={
-        "user_id": user_id,
-        "text": f"authenticate as {username} with passcode {passcode}"
+# Chatbox input
+user_input = st.text_area("Type your message (authentication, update, or query):", height=150)
+send_btn = st.button("💬 Send")
+
+# Process input
+if send_btn and user_input and st.session_state.user_id:
+    response = requests.post(API_URL, json={
+        "user_id": st.session_state.user_id,
+        "text": user_input
     })
     result = response.json()
-    if result.get("authenticated"):
-        st.success(result.get("message"))
-        authenticated = True
-    else:
-        st.error(result.get("message"))
+    st.session_state.chat_history.append(("You", user_input))
+    
+    message = result.get("message", "")
+    action = result.get("action", "")
+    result_text = result.get("result", "")
 
-if authenticated or st.session_state.get("authenticated"):
-    st.session_state["authenticated"] = True
-    st.success("Authenticated ✔")
-
-    mode = st.radio("Choose Action", ["Send Note", "Query Memory"], horizontal=True)
-    user_input = st.text_area("Your Input", height=150, placeholder="e.g. I updated the roadmap for Q3 goals")
-    go = st.button("Submit")
-
-    if go and user_input:
-        action = "send" if mode == "Send Note" else "query"
-        response = requests.post("https://3m9yprbn71.execute-api.ap-south-1.amazonaws.com/production/process", json={
-            "user_id": user_id,
-            "text": user_input
-        })
-        result = response.json()
-        if result.get("status") == "success":
-            st.success(result.get("message"))
-            if result.get("action") == "query":
-                st.write("### 📄 Result")
-                st.markdown(result.get("result", "No result returned."))
+    if result.get("status") == "success":
+        if action == "query":
+            reply = f"📄 **Result:**\n\n{result_text}"
         else:
-            st.error(result.get("message"))
-else:
-    st.info("Please authenticate to begin.")
+            reply = f"✅ {message}"
+    else:
+        reply = f"❌ {message}"
+    
+    st.session_state.chat_history.append(("PM Assist", reply))
+
+# Display chat history
+for sender, msg in reversed(st.session_state.chat_history):
+    st.markdown(f"**{sender}:** {msg}", unsafe_allow_html=True)
