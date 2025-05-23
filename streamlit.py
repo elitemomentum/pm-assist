@@ -57,6 +57,7 @@ if send_btn:
                 "text": user_input
             })
             result = response.json()
+            st.write("Debug - Full API Response:", result)
 
             message = result.get("message", "")
             result_text = result.get("result", "")
