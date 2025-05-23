@@ -25,7 +25,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 Assistant")
+st.title("🧠 PM Assist")
 
 # Session State Initialization
 if "chat_history" not in st.session_state:
@@ -63,26 +63,17 @@ if send_btn:
             status = result.get("status", "error")
             action = result.get("action", "")
 
-            try:
-                if status == "success":
-                    if action == "query":
-                        if matches:
-                            reply = "📄 **Memory Result:**\n\n"
-                            for m in matches:
-                                reply += f"- {m['text']} *(score: {round(m['score'], 2)})*\n"
-                        elif result_text:
-                            reply = f"📄 **Memory Result:**\n\n{result_text}"
-                        else:
-                            reply = "📄 **Memory Result:**\n\n_No relevant memory found._"
-                    else:
-                        reply = f"✅ {message}"
+            if status == "success":
+                if action == "query":
+                    reply = f"📄 **Memory Result:**\n\n{result_text or message}"
                 else:
-                    reply = f"❌ {message or 'Unknown error.'}"
-            except Exception as e:
-                reply = f"❌ Error: {str(e)}"
+                    reply = f"✅ {message}"
+            else:
+                reply = f"❌ {message or 'Unknown error.'}"
+        except Exception as e:
+            reply = f"❌ Error: {str(e)}"
 
-            st.session_state.chat_history.append(("PM Assist", reply))
-
+        st.session_state.chat_history.append(("PM Assist", reply))
 
 # Display Chat
 st.divider()
