@@ -27,39 +27,57 @@ st.markdown("""
 
 st.title("🧠 PM Assist – Project Memory Chat")
 
-# Session state
+# Session State Initialization
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "user_id" not in st.session_state:
+    st.session_state.user_id = ""
+
+# User ID Input
+if not st.session_state.user_id:
     st.session_state.user_id = st.text_input("Enter your User ID to begin:")
 
-# Chatbox input
-user_input = st.text_area("Type your message (authentication, update, or query):", height=150)
-send_btn = st.button("💬 Send")
+# Chat Input
+user_input = st.text_area("💬 Type your message:", height=150, placeholder="E.g. Authenticate as alice with passcode 1234")
+send_btn = st.button("Send")
 
-# Process input
-if send_btn and user_input and st.session_state.user_id:
-    response = requests.post(API_URL, json={
-        "user_id": st.session_state.user_id,
-        "text": user_input
-    })
-    result = response.json()
-    st.session_state.chat_history.append(("You", user_input))
-    
-    message = result.get("message", "")
-    action = result.get("action", "")
-    result_text = result.get("result", "")
-
-    if result.get("status") == "success":
-        if action == "query":
-            reply = f"📄 **Result:**\n\n{result_text}"
-        else:
-            reply = f"✅ {message}"
+# On Send
+if send_btn:
+    if not st.session_state.user_id:
+        st.warning("Please enter your User ID.")
+    elif not user_input.strip():
+        st.warning("Message cannot be empty.")
     else:
-        reply = f"❌ {message}"
-    
-    st.session_state.chat_history.append(("PM Assist", reply))
+        # Store user input
+        st.session_state.chat_history.append(("You", user_input))
 
-# Display chat history
+        try:
+            response = requests.post(API_URL, json={
+                "user_id": st.session_state.user_id,
+                "text": user_input
+            })
+            result = response.json()
+
+            message = result.get("message", "")
+            result_text = result.get("result", "")
+            status = result.get("status", "error")
+            action = result.get("action", "")
+
+            if status == "success":
+                if action == "query":
+                    reply = f"📄 **Memory Result:**\n\n{result_text or message}"
+                else:
+                    reply = f"✅ {message}"
+            else:
+                reply = f"❌ {message or 'Unknown error.'}"
+        except Exception as e:
+            reply = f"❌ Error: {str(e)}"
+
+        st.session_state.chat_history.append(("PM Assist", reply))
+
+# Display Chat
+st.divider()
+st.subheader("🗂️ Conversation History")
 for sender, msg in reversed(st.session_state.chat_history):
-    st.markdown(f"**{sender}:** {msg}", unsafe_allow_html=True)
+    with st.chat_message(name=sender):
+        st.markdown(msg, unsafe_allow_html=True)
